@@ -1,408 +1,465 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const INCOME = 3600;
-
-const fixedExpenses = [
-  { id: 1, name: "Спорт", monthly: 180, color: "#e8845a", emoji: "🏋️" },
-  { id: 2, name: "Маникюр", monthly: 90, color: "#d4845a", emoji: "💅" },
-  { id: 3, name: "Педикюр", monthly: 45, color: "#c97a52", emoji: "🦶", note: "90€ раз в 2 мес" },
-  { id: 4, name: "Подписки", monthly: 70, color: "#b8704a", emoji: "📱" },
-  { id: 5, name: "Кредит (камера)", monthly: 86, color: "#a06040", emoji: "📷" },
-  { id: 6, name: "Общий счёт (еда)", monthly: 1000, color: "#c8855a", emoji: "🛒" },
-  { id: 7, name: "Волосы", monthly: 180, color: "#d47a50", emoji: "💇", note: "450€ раз в 2.5 мес" },
-];
-
-const TOTAL_FIXED = fixedExpenses.reduce((s, e) => s + e.monthly, 0);
+const TOTAL_FIXED = 1651;
 const AVAILABLE = INCOME - TOTAL_FIXED;
 
-// Cute Podenco SVG illustrations
-const TeoSVG = () => (
-  <svg width="54" height="54" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="27" cy="34" rx="16" ry="13" fill="#d4845a" />
-    <ellipse cx="27" cy="22" rx="11" ry="10" fill="#e8a07a" />
-    {/* ears */}
-    <ellipse cx="17" cy="14" rx="5" ry="9" fill="#c47050" transform="rotate(-15 17 14)" />
-    <ellipse cx="37" cy="14" rx="5" ry="9" fill="#c47050" transform="rotate(15 37 14)" />
-    <ellipse cx="17" cy="14" rx="3" ry="6" fill="#f0b090" transform="rotate(-15 17 14)" />
-    <ellipse cx="37" cy="14" rx="3" ry="6" fill="#f0b090" transform="rotate(15 37 14)" />
-    {/* eyes */}
-    <circle cx="23" cy="21" r="2.5" fill="#3a2010" />
-    <circle cx="31" cy="21" r="2.5" fill="#3a2010" />
-    <circle cx="23.8" cy="20.2" r="0.8" fill="white" />
-    <circle cx="31.8" cy="20.2" r="0.8" fill="white" />
-    {/* nose */}
-    <ellipse cx="27" cy="26" rx="2.5" ry="1.8" fill="#3a2010" />
-    {/* mouth */}
-    <path d="M24.5 28.5 Q27 31 29.5 28.5" stroke="#3a2010" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-    {/* tail */}
-    <path d="M42 38 Q50 30 48 24" stroke="#c47050" strokeWidth="4" fill="none" strokeLinecap="round" />
-    {/* legs */}
-    <rect x="16" y="44" width="5" height="8" rx="2.5" fill="#c47050" />
-    <rect x="23" y="44" width="5" height="8" rx="2.5" fill="#c47050" />
-    <rect x="30" y="44" width="5" height="8" rx="2.5" fill="#c47050" />
+const CATEGORIES = [
+  { id: "food", label: "Еда & кафе", icon: "🍽️", color: "#e8845a" },
+  { id: "shopping", label: "Шопинг", icon: "🛍️", color: "#d4705a" },
+  { id: "beauty", label: "Красота", icon: "💄", color: "#c96070" },
+  { id: "transport", label: "Транспорт", icon: "🚌", color: "#a06848" },
+  { id: "health", label: "Здоровье", icon: "💊", color: "#7a9850" },
+  { id: "pets", label: "Teo & Frida", icon: "🐾", color: "#c47050" },
+  { id: "entertainment", label: "Развлечения", icon: "🎬", color: "#8060a0" },
+  { id: "other", label: "Другое", icon: "✨", color: "#b09070" },
+];
+
+const FIXED_EXPENSES = [
+  { name: "Спорт", monthly: 180, icon: "🏋️" },
+  { name: "Маникюр", monthly: 90, icon: "💅" },
+  { name: "Педикюр", monthly: 45, icon: "🦶", note: "90€ / 2 мес" },
+  { name: "Подписки", monthly: 70, icon: "📱" },
+  { name: "Кредит (камера)", monthly: 86, icon: "📷" },
+  { name: "Общий счёт", monthly: 1000, icon: "🛒" },
+  { name: "Волосы", monthly: 180, icon: "💇", note: "450€ / 2.5 мес" },
+];
+
+const MONTHS = ["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
+const now = new Date();
+const currentMonth = now.getMonth();
+const currentYear = now.getFullYear();
+
+const TeoSVG = ({ size = 48 }) => (
+  <svg width={size} height={size} viewBox="0 0 54 54" fill="none">
+    <ellipse cx="27" cy="34" rx="16" ry="13" fill="#d4845a"/>
+    <ellipse cx="27" cy="22" rx="11" ry="10" fill="#e8a07a"/>
+    <ellipse cx="17" cy="14" rx="5" ry="9" fill="#c47050" transform="rotate(-15 17 14)"/>
+    <ellipse cx="37" cy="14" rx="5" ry="9" fill="#c47050" transform="rotate(15 37 14)"/>
+    <ellipse cx="17" cy="14" rx="3" ry="6" fill="#f0b090" transform="rotate(-15 17 14)"/>
+    <ellipse cx="37" cy="14" rx="3" ry="6" fill="#f0b090" transform="rotate(15 37 14)"/>
+    <circle cx="23" cy="21" r="2.5" fill="#3a2010"/>
+    <circle cx="31" cy="21" r="2.5" fill="#3a2010"/>
+    <circle cx="23.8" cy="20.2" r="0.8" fill="white"/>
+    <circle cx="31.8" cy="20.2" r="0.8" fill="white"/>
+    <ellipse cx="27" cy="26" rx="2.5" ry="1.8" fill="#3a2010"/>
+    <path d="M24.5 28.5 Q27 31 29.5 28.5" stroke="#3a2010" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+    <path d="M42 38 Q50 30 48 24" stroke="#c47050" strokeWidth="4" fill="none" strokeLinecap="round"/>
+    <rect x="16" y="44" width="5" height="8" rx="2.5" fill="#c47050"/>
+    <rect x="23" y="44" width="5" height="8" rx="2.5" fill="#c47050"/>
+    <rect x="30" y="44" width="5" height="8" rx="2.5" fill="#c47050"/>
   </svg>
 );
 
-const FridaSVG = () => (
-  <svg width="54" height="54" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="27" cy="34" rx="16" ry="13" fill="#b8704a" />
-    <ellipse cx="27" cy="22" rx="11" ry="10" fill="#d4906a" />
-    {/* ears - slightly bigger for Frida */}
-    <ellipse cx="16" cy="13" rx="5.5" ry="10" fill="#a06040" transform="rotate(-10 16 13)" />
-    <ellipse cx="38" cy="13" rx="5.5" ry="10" fill="#a06040" transform="rotate(10 38 13)" />
-    <ellipse cx="16" cy="13" rx="3.5" ry="7" fill="#f0b090" transform="rotate(-10 16 13)" />
-    <ellipse cx="38" cy="13" rx="3.5" ry="7" fill="#f0b090" transform="rotate(10 38 13)" />
-    {/* little flower accessory */}
-    <circle cx="38" cy="6" r="4" fill="#f4a460" />
-    <circle cx="38" cy="2" r="2.5" fill="#ffcc88" />
-    <circle cx="42" cy="4" r="2.5" fill="#ffcc88" />
-    <circle cx="42" cy="8" r="2.5" fill="#ffcc88" />
-    <circle cx="38" cy="10" r="2.5" fill="#ffcc88" />
-    <circle cx="34" cy="8" r="2.5" fill="#ffcc88" />
-    <circle cx="34" cy="4" r="2.5" fill="#ffcc88" />
-    <circle cx="38" cy="6" r="2" fill="#e8845a" />
-    {/* eyes */}
-    <circle cx="23" cy="21" r="2.5" fill="#3a2010" />
-    <circle cx="31" cy="21" r="2.5" fill="#3a2010" />
-    <circle cx="23.8" cy="20.2" r="0.8" fill="white" />
-    <circle cx="31.8" cy="20.2" r="0.8" fill="white" />
-    {/* nose */}
-    <ellipse cx="27" cy="26" rx="2.5" ry="1.8" fill="#3a2010" />
-    {/* mouth smile */}
-    <path d="M24 28.5 Q27 32 30 28.5" stroke="#3a2010" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-    {/* tail */}
-    <path d="M42 38 Q52 32 50 22" stroke="#a06040" strokeWidth="4" fill="none" strokeLinecap="round" />
-    {/* legs */}
-    <rect x="16" y="44" width="5" height="8" rx="2.5" fill="#a06040" />
-    <rect x="23" y="44" width="5" height="8" rx="2.5" fill="#a06040" />
-    <rect x="30" y="44" width="5" height="8" rx="2.5" fill="#a06040" />
+const FridaSVG = ({ size = 48 }) => (
+  <svg width={size} height={size} viewBox="0 0 54 54" fill="none">
+    <ellipse cx="27" cy="34" rx="16" ry="13" fill="#b8704a"/>
+    <ellipse cx="27" cy="22" rx="11" ry="10" fill="#d4906a"/>
+    <ellipse cx="16" cy="13" rx="5.5" ry="10" fill="#a06040" transform="rotate(-10 16 13)"/>
+    <ellipse cx="38" cy="13" rx="5.5" ry="10" fill="#a06040" transform="rotate(10 38 13)"/>
+    <ellipse cx="16" cy="13" rx="3.5" ry="7" fill="#f0b090" transform="rotate(-10 16 13)"/>
+    <ellipse cx="38" cy="13" rx="3.5" ry="7" fill="#f0b090" transform="rotate(10 38 13)"/>
+    <circle cx="38" cy="6" r="4" fill="#f4a460"/>
+    <circle cx="38" cy="2" r="2.5" fill="#ffcc88"/>
+    <circle cx="42" cy="4" r="2.5" fill="#ffcc88"/>
+    <circle cx="42" cy="8" r="2.5" fill="#ffcc88"/>
+    <circle cx="38" cy="10" r="2.5" fill="#ffcc88"/>
+    <circle cx="34" cy="8" r="2.5" fill="#ffcc88"/>
+    <circle cx="34" cy="4" r="2.5" fill="#ffcc88"/>
+    <circle cx="38" cy="6" r="2" fill="#e8845a"/>
+    <circle cx="23" cy="21" r="2.5" fill="#3a2010"/>
+    <circle cx="31" cy="21" r="2.5" fill="#3a2010"/>
+    <circle cx="23.8" cy="20.2" r="0.8" fill="white"/>
+    <circle cx="31.8" cy="20.2" r="0.8" fill="white"/>
+    <ellipse cx="27" cy="26" rx="2.5" ry="1.8" fill="#3a2010"/>
+    <path d="M24 28.5 Q27 32 30 28.5" stroke="#3a2010" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+    <path d="M42 38 Q52 32 50 22" stroke="#a06040" strokeWidth="4" fill="none" strokeLinecap="round"/>
+    <rect x="16" y="44" width="5" height="8" rx="2.5" fill="#a06040"/>
+    <rect x="23" y="44" width="5" height="8" rx="2.5" fill="#a06040"/>
+    <rect x="30" y="44" width="5" height="8" rx="2.5" fill="#a06040"/>
   </svg>
 );
 
-export default function BudgetTracker() {
-  const [savingsGoal, setSavingsGoal] = useState(500);
-  const [entries, setEntries] = useState([]);
-  const [entryName, setEntryName] = useState("");
-  const [entryAmt, setEntryAmt] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+function useLocalStorage(key, defaultVal) {
+  const [val, setVal] = useState(() => {
+    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : defaultVal; }
+    catch { return defaultVal; }
+  });
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }, [key, val]);
+  return [val, setVal];
+}
 
-  const totalMisc = entries.reduce((s, e) => s + e.amount, 0);
+export default function App() {
+  const [tab, setTab] = useState("home");
+  const [savingsGoal, setSavingsGoal] = useLocalStorage("savingsGoal", 500);
+  const [allEntries, setAllEntries] = useLocalStorage("allEntries", {});
+  const [monthHistory, setMonthHistory] = useLocalStorage("monthHistory", {});
+
+  const [name, setName] = useState("");
+  const [amt, setAmt] = useState("");
+  const [cat, setCat] = useState("other");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  const monthKey = `${selectedYear}-${selectedMonth}`;
+  const currentKey = `${currentYear}-${currentMonth}`;
+  const entries = allEntries[monthKey] || [];
+  const isCurrentMonth = monthKey === currentKey;
+
+  const totalSpent = entries.reduce((s, e) => s + e.amount, 0);
   const spendBudget = AVAILABLE - savingsGoal;
-  const remaining = spendBudget - totalMisc;
-  const pct = (val, total) => Math.min(100, Math.max(0, Math.round((val / total) * 100)));
+  const remaining = spendBudget - totalSpent;
+  const savingsPct = Math.min(100, Math.round((savingsGoal / AVAILABLE) * 100));
+  const spentPct = Math.min(100, Math.round((totalSpent / spendBudget) * 100));
+  const isOver = remaining < 0;
+  const isWarning = remaining >= 0 && remaining < spendBudget * 0.2;
 
   const addEntry = () => {
-    const amt = parseFloat(entryAmt);
-    if (!entryName.trim() || isNaN(amt) || amt <= 0) return;
-    setEntries([...entries, { id: Date.now(), name: entryName.trim(), amount: amt }]);
-    setEntryName("");
-    setEntryAmt("");
+    const a = parseFloat(amt);
+    if (!name.trim() || isNaN(a) || a <= 0) return;
+    const entry = { id: Date.now(), name: name.trim(), amount: a, category: cat, date: new Date().toLocaleDateString("ru") };
+    setAllEntries(prev => ({ ...prev, [currentKey]: [...(prev[currentKey] || []), entry] }));
+    setName(""); setAmt(""); setCat("other");
   };
 
-  const removeEntry = (id) => setEntries(entries.filter((e) => e.id !== id));
-
-  const styles = {
-    page: {
-      minHeight: "100vh",
-      background: "linear-gradient(160deg, #fff8f2 0%, #ffe8d6 50%, #ffd4b8 100%)",
-      fontFamily: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
-      color: "#5a3020",
-    },
-    header: {
-      background: "rgba(255,255,255,0.7)",
-      backdropFilter: "blur(20px)",
-      borderBottom: "1px solid rgba(200,130,80,0.15)",
-      padding: "24px 28px 18px",
-    },
-    tag: {
-      fontSize: 10,
-      letterSpacing: 3,
-      color: "#c47050",
-      textTransform: "uppercase",
-      marginBottom: 6,
-    },
-    h1: {
-      margin: 0,
-      fontSize: 26,
-      fontWeight: 400,
-      color: "#7a3820",
-      fontStyle: "italic",
-    },
-    sub: { marginTop: 6, color: "#a06848", fontSize: 13 },
-    dogs: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      marginTop: 12,
-      padding: "10px 16px",
-      background: "rgba(255,200,150,0.25)",
-      borderRadius: 20,
-      border: "1px solid rgba(200,130,80,0.2)",
-      width: "fit-content",
-    },
-    dogName: { fontSize: 12, color: "#b06040", fontStyle: "italic" },
-    content: { maxWidth: 680, margin: "0 auto", padding: "0 24px" },
-    tabs: { display: "flex", gap: 4, paddingTop: 20, marginBottom: 22 },
-    tab: (active) => ({
-      padding: "8px 18px",
-      borderRadius: 20,
-      border: "none",
-      cursor: "pointer",
-      fontSize: 13,
-      fontFamily: "inherit",
-      transition: "all 0.2s",
-      background: active ? "rgba(196,112,80,0.15)" : "transparent",
-      color: active ? "#c47050" : "#b09080",
-      borderBottom: active ? "2px solid #c47050" : "2px solid transparent",
-    }),
-    card: {
-      background: "rgba(255,255,255,0.65)",
-      border: "1px solid rgba(200,130,80,0.15)",
-      borderRadius: 18,
-      padding: "18px 22px",
-      marginBottom: 14,
-      backdropFilter: "blur(10px)",
-    },
-    cardLabel: { fontSize: 12, color: "#b09080", marginBottom: 10, letterSpacing: 0.5 },
-    statGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 },
-    statCard: (color) => ({
-      background: "rgba(255,255,255,0.7)",
-      border: `1px solid ${color}30`,
-      borderRadius: 14,
-      padding: "14px 12px",
-      textAlign: "center",
-    }),
-    statVal: (color) => ({ fontSize: 20, fontWeight: 700, color }),
-    statLabel: { fontSize: 10, color: "#b09080", marginTop: 4, letterSpacing: 0.5 },
-    input: {
-      flex: 2,
-      padding: "10px 14px",
-      borderRadius: 10,
-      border: "1px solid rgba(200,130,80,0.3)",
-      background: "rgba(255,255,255,0.8)",
-      color: "#5a3020",
-      fontSize: 14,
-      fontFamily: "inherit",
-      outline: "none",
-    },
-    btn: {
-      padding: "10px 18px",
-      borderRadius: 10,
-      border: "none",
-      background: "linear-gradient(135deg, #e8845a, #c46040)",
-      color: "white",
-      cursor: "pointer",
-      fontSize: 18,
-      fontFamily: "inherit",
-      boxShadow: "0 2px 8px rgba(196,96,64,0.3)",
-    },
-    entryRow: {
-      background: "rgba(255,255,255,0.6)",
-      border: "1px solid rgba(200,130,80,0.12)",
-      borderRadius: 12,
-      padding: "11px 16px",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 8,
-    },
+  const removeEntry = (id) => {
+    setAllEntries(prev => ({ ...prev, [monthKey]: (prev[monthKey] || []).filter(e => e.id !== id) }));
   };
+
+  const catTotals = CATEGORIES.map(c => ({
+    ...c, total: entries.filter(e => e.category === c.id).reduce((s, e) => s + e.amount, 0)
+  })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
+
+  const savedMonths = Object.keys(allEntries).sort().reverse().slice(0, 6);
+
+  const W = { fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" };
+
+  const card = {
+    background: "white",
+    borderRadius: 20,
+    padding: "16px 18px",
+    marginBottom: 12,
+    boxShadow: "0 2px 12px rgba(180,100,60,0.08)",
+    border: "1px solid rgba(200,130,80,0.1)",
+  };
+
+  const pill = (active) => ({
+    padding: "6px 14px",
+    borderRadius: 20,
+    border: "none",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: active ? 600 : 400,
+    background: active ? "#e8845a" : "rgba(232,132,90,0.1)",
+    color: active ? "white" : "#c47050",
+    transition: "all 0.2s",
+  });
+
+  const navBtn = (t) => ({
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 3,
+    padding: "8px 0",
+    border: "none",
+    background: "none",
+    cursor: "pointer",
+    color: tab === t ? "#e8845a" : "#c0a090",
+    fontSize: 10,
+    fontWeight: tab === t ? 600 : 400,
+    ...W,
+  });
 
   return (
-    <div style={styles.page}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={{ maxWidth: 680, margin: "0 auto" }}>
-          <div style={styles.tag}>Мой бюджет</div>
-          <h1 style={styles.h1}>Teo & Frida's Finance Tracker 🐾</h1>
-          <div style={styles.sub}>Зарплата: <strong style={{ color: "#c47050" }}>{INCOME} €</strong> / месяц</div>
-          <div style={styles.dogs}>
-            <TeoSVG />
-            <div>
-              <div style={styles.dogName}>Teo</div>
-              <div style={{ fontSize: 10, color: "#c8a090" }}>chief napper</div>
-            </div>
-            <div style={{ width: 1, height: 36, background: "rgba(200,130,80,0.2)", margin: "0 6px" }} />
-            <FridaSVG />
-            <div>
-              <div style={styles.dogName}>Frida</div>
-              <div style={{ fontSize: 10, color: "#c8a090" }}>budget supervisor</div>
-            </div>
+    <div style={{ minHeight: "100vh", background: "#fdf6f0", ...W, paddingBottom: 80 }}>
+
+      {/* HEADER */}
+      <div style={{ background: "linear-gradient(160deg, #e8845a 0%, #c46040 100%)", padding: "52px 20px 24px", color: "white" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4, letterSpacing: 1 }}>МОЙ БЮДЖЕТ</div>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>Teo & Frida 🐾</div>
+            <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>{MONTHS[currentMonth]} {currentYear} · {INCOME} €/мес</div>
           </div>
+          <div style={{ display: "flex", gap: -8 }}>
+            <div style={{ marginRight: -10 }}><TeoSVG size={44}/></div>
+            <FridaSVG size={44}/>
+          </div>
+        </div>
+
+        {/* Quick stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 20 }}>
+          {[
+            { label: "Фикс. расходы", val: TOTAL_FIXED },
+            { label: "Копилка", val: savingsGoal },
+            { label: remaining < 0 ? "Перерасход" : "Остаток", val: Math.abs(remaining) },
+          ].map(s => (
+            <div key={s.label} style={{ background: "rgba(255,255,255,0.18)", borderRadius: 14, padding: "10px 8px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{s.val}€</div>
+              <div style={{ fontSize: 10, opacity: 0.85, marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div style={styles.content}>
-        {/* Tabs */}
-        <div style={styles.tabs}>
-          {["overview", "tracker", "fixed"].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={styles.tab(activeTab === tab)}>
-              {{ overview: "🌿 Обзор", tracker: "🐾 Траты", fixed: "📋 Фикс" }[tab]}
-            </button>
-          ))}
-        </div>
+      <div style={{ padding: "16px 16px 0" }}>
 
-        {/* OVERVIEW */}
-        {activeTab === "overview" && (
-          <div>
-            <div style={styles.statGrid}>
-              {[
-                { label: "Фикс. расходы", val: TOTAL_FIXED, color: "#c47050" },
-                { label: "Накопления", val: savingsGoal, color: "#8aab60" },
-                { label: "Остаток", val: Math.max(0, remaining), color: remaining < 0 ? "#c05050" : "#c47050" },
-              ].map(c => (
-                <div key={c.label} style={styles.statCard(c.color)}>
-                  <div style={styles.statVal(c.color)}>{c.val} €</div>
-                  <div style={styles.statLabel}>{c.label}</div>
+        {/* HOME TAB */}
+        {tab === "home" && (
+          <>
+            {/* Alert */}
+            {(isOver || isWarning) && (
+              <div style={{ ...card, background: isOver ? "#fff0f0" : "#fffbf0", border: `1px solid ${isOver ? "#f0c0c0" : "#f0dca0"}`, marginBottom: 12 }}>
+                <div style={{ fontSize: 13, color: isOver ? "#c05050" : "#a07020", fontWeight: 500 }}>
+                  {isOver ? "🚨 Frida говорит: бюджет превышен на " + Math.abs(remaining) + "€!" : "⚠️ Teo предупреждает: осталось меньше 20% бюджета!"}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
-            {/* Savings slider */}
-            <div style={{ ...styles.card, background: "rgba(200,230,160,0.25)", border: "1px solid rgba(140,180,80,0.25)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <span style={{ fontSize: 14, color: "#6a9040" }}>🎯 Цель накопления</span>
-                <span style={{ fontSize: 22, fontWeight: 700, color: "#6a9040" }}>{savingsGoal} €</span>
+            {/* Savings progress */}
+            <div style={card}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#5a3020" }}>Цель накопления</div>
+                  <div style={{ fontSize: 12, color: "#b09080", marginTop: 1 }}>За год: {savingsGoal * 12}€</div>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#7a9850" }}>{savingsGoal}€</div>
+              </div>
+              <div style={{ height: 8, background: "#f0e8e0", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${savingsPct}%`, background: "linear-gradient(90deg, #a0c870, #7aaa40)", borderRadius: 4, transition: "width 0.4s" }}/>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#c0a890", marginTop: 6 }}>
+                <span>{savingsPct}% от свободных денег</span>
+                <span>из {AVAILABLE}€</span>
               </div>
               <input type="range" min={0} max={AVAILABLE} step={50} value={savingsGoal}
                 onChange={e => setSavingsGoal(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "#8aab60", cursor: "pointer" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#a0b888", marginTop: 4 }}>
-                <span>0 €</span><span>{AVAILABLE} €</span>
-              </div>
-              <div style={{ marginTop: 10, fontSize: 12, color: "#8a9870" }}>
-                💡 За год это <strong style={{ color: "#6a9040" }}>{savingsGoal * 12} €</strong> накоплений
-              </div>
+                style={{ width: "100%", accentColor: "#8aab60", marginTop: 10, cursor: "pointer" }}/>
             </div>
 
-            {/* Budget bar */}
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>Распределение бюджета</div>
-              <div style={{ display: "flex", height: 14, borderRadius: 7, overflow: "hidden", marginBottom: 14, gap: 2 }}>
-                <div style={{ width: `${pct(TOTAL_FIXED, INCOME)}%`, background: "linear-gradient(90deg, #e8845a, #c46040)", borderRadius: "7px 0 0 7px" }} />
-                <div style={{ width: `${pct(savingsGoal, INCOME)}%`, background: "linear-gradient(90deg, #a0c870, #7aaa40)" }} />
-                <div style={{ width: `${pct(totalMisc, INCOME)}%`, background: "linear-gradient(90deg, #f0c090, #d4a070)" }} />
-                <div style={{ flex: 1, background: "rgba(200,130,80,0.1)", borderRadius: "0 7px 7px 0" }} />
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", fontSize: 12 }}>
-                {[
-                  ["#e8845a", `Фикс. ${TOTAL_FIXED}€`, `${pct(TOTAL_FIXED, INCOME)}%`],
-                  ["#a0c870", `Копилка ${savingsGoal}€`, `${pct(savingsGoal, INCOME)}%`],
-                  ["#f0c090", `Траты ${totalMisc}€`, `${pct(totalMisc, INCOME)}%`],
-                  ["rgba(200,130,80,0.25)", `Свободно ${Math.max(0, remaining)}€`, ""],
-                ].map(([c, l, p]) => (
-                  <div key={l} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 9, height: 9, borderRadius: 2, background: c }} />
-                    <span style={{ color: "#9a7060" }}>{l}</span>
-                    {p && <span style={{ color: "#c0a090" }}>{p}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Remaining */}
-            <div style={{
-              ...styles.card,
-              background: remaining < 0 ? "rgba(200,80,80,0.06)" : "rgba(255,220,180,0.4)",
-              border: `1px solid ${remaining < 0 ? "rgba(200,80,80,0.2)" : "rgba(200,130,80,0.2)"}`,
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-            }}>
-              <div>
-                <div style={{ fontSize: 13, color: "#a07858" }}>Бюджет на «всякую фигню»</div>
-                <div style={{ fontSize: 11, color: "#c0a090", marginTop: 3 }}>
-                  {spendBudget}€ на месяц · потрачено {totalMisc}€
+            {/* Spending progress */}
+            <div style={card}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#5a3020" }}>Траты в {MONTHS[currentMonth]}</div>
+                  <div style={{ fontSize: 12, color: "#b09080", marginTop: 1 }}>бюджет {spendBudget}€</div>
                 </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: isOver ? "#c05050" : "#e8845a" }}>{totalSpent}€</div>
               </div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: remaining < 0 ? "#c05050" : "#c47050" }}>
-                {remaining < 0 ? "−" : ""}{Math.abs(remaining)} €
+              <div style={{ height: 8, background: "#f0e8e0", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(100, spentPct)}%`, background: isOver ? "linear-gradient(90deg, #f09090, #c05050)" : "linear-gradient(90deg, #f0b070, #e8845a)", borderRadius: 4, transition: "width 0.4s" }}/>
               </div>
-            </div>
-
-            {remaining < 0 && (
-              <div style={{ ...styles.card, background: "rgba(200,80,80,0.07)", border: "1px solid rgba(200,80,80,0.15)", fontSize: 13, color: "#a05050" }}>
-                🐾 Frida says: превышение бюджета! Снизь цель или урежь траты.
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TRACKER */}
-        {activeTab === "tracker" && (
-          <div>
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>Добавить трату</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input value={entryName} onChange={e => setEntryName(e.target.value)}
-                  placeholder="На что потратила?" onKeyDown={e => e.key === "Enter" && addEntry()}
-                  style={styles.input} />
-                <input value={entryAmt} onChange={e => setEntryAmt(e.target.value)}
-                  placeholder="€" type="number" onKeyDown={e => e.key === "Enter" && addEntry()}
-                  style={{ ...styles.input, flex: 0.6 }} />
-                <button onClick={addEntry} style={styles.btn}>+</button>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#c0a890", marginTop: 6 }}>
+                <span>{spentPct}% использовано</span>
+                <span style={{ color: isOver ? "#c05050" : "#7aaa40", fontWeight: 500 }}>
+                  {isOver ? `−${Math.abs(remaining)}€ перерасход` : `${remaining}€ осталось`}
+                </span>
               </div>
             </div>
 
-            <div style={{ ...styles.card, display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-              <span style={{ color: "#a07858" }}>Бюджет: <strong style={{ color: "#c47050" }}>{spendBudget} €</strong></span>
-              <span style={{ color: "#a07858" }}>Остаток: <strong style={{ color: remaining < 0 ? "#c05050" : "#8aab60" }}>{remaining} €</strong></span>
-            </div>
-
-            {entries.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 0", color: "#c0a090", fontSize: 14 }}>
-                <div style={{ fontSize: 40, marginBottom: 10 }}>🐾</div>
-                Пока трат нет — Teo одобряет!
-              </div>
-            ) : (
-              <div>
-                {entries.map(e => (
-                  <div key={e.id} style={styles.entryRow}>
-                    <span style={{ color: "#7a4830", fontSize: 14 }}>{e.name}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ color: "#c47050", fontWeight: 600 }}>−{e.amount} €</span>
-                      <button onClick={() => removeEntry(e.id)} style={{
-                        background: "none", border: "none", color: "#c0a090", cursor: "pointer", fontSize: 16, padding: 0,
-                      }}>✕</button>
+            {/* Category breakdown */}
+            {catTotals.length > 0 && (
+              <div style={card}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#5a3020", marginBottom: 12 }}>По категориям</div>
+                {catTotals.map(c => (
+                  <div key={c.id} style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#7a5040" }}>
+                        <span>{c.icon}</span><span>{c.label}</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: c.color }}>{c.total}€</span>
+                    </div>
+                    <div style={{ height: 5, background: "#f0e8e0", borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${Math.min(100, Math.round((c.total / spendBudget) * 100))}%`, background: c.color, borderRadius: 3 }}/>
                     </div>
                   </div>
                 ))}
-                <div style={{ padding: "8px 16px", display: "flex", justifyContent: "space-between", fontSize: 13, color: "#b09080" }}>
-                  <span>Итого</span>
-                  <span style={{ color: "#c47050", fontWeight: 700 }}>{totalMisc} €</span>
-                </div>
               </div>
             )}
-          </div>
+          </>
         )}
 
-        {/* FIXED */}
-        {activeTab === "fixed" && (
-          <div>
-            {fixedExpenses.map(e => (
-              <div key={e.id} style={{ ...styles.entryRow, marginBottom: 10, padding: "14px 18px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 20 }}>{e.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 14, color: "#7a4830" }}>{e.name}</div>
-                    {e.note && <div style={{ fontSize: 11, color: "#c0a090" }}>{e.note}</div>}
+        {/* ADD TAB */}
+        {tab === "add" && (
+          <>
+            <div style={card}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#5a3020", marginBottom: 14 }}>Добавить трату</div>
+              <input value={name} onChange={e => setName(e.target.value)}
+                placeholder="Название траты..."
+                onKeyDown={e => e.key === "Enter" && addEntry()}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #f0d8c8", fontSize: 15, marginBottom: 10, boxSizing: "border-box", outline: "none", color: "#5a3020", background: "#fffaf7" }}/>
+              <input value={amt} onChange={e => setAmt(e.target.value)}
+                placeholder="Сумма в €"
+                type="number" onKeyDown={e => e.key === "Enter" && addEntry()}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #f0d8c8", fontSize: 15, marginBottom: 14, boxSizing: "border-box", outline: "none", color: "#5a3020", background: "#fffaf7" }}/>
+
+              <div style={{ fontSize: 12, color: "#b09080", marginBottom: 10, fontWeight: 500 }}>КАТЕГОРИЯ</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                {CATEGORIES.map(c => (
+                  <button key={c.id} onClick={() => setCat(c.id)} style={{
+                    padding: "10px 12px", borderRadius: 12, border: `1.5px solid ${cat === c.id ? c.color : "#f0d8c8"}`,
+                    background: cat === c.id ? c.color + "18" : "white", cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 8, fontSize: 13,
+                    color: cat === c.id ? c.color : "#9a7060", fontWeight: cat === c.id ? 600 : 400,
+                    ...W,
+                  }}>
+                    <span>{c.icon}</span><span>{c.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={addEntry} style={{
+                width: "100%", padding: "14px", borderRadius: 14, border: "none",
+                background: "linear-gradient(135deg, #e8845a, #c46040)", color: "white",
+                fontSize: 16, fontWeight: 600, cursor: "pointer", ...W,
+              }}>Добавить трату</button>
+            </div>
+
+            {/* Today's entries */}
+            {(allEntries[currentKey] || []).length > 0 && (
+              <div style={card}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#5a3020", marginBottom: 12 }}>Этот месяц</div>
+                {(allEntries[currentKey] || []).slice().reverse().map(e => {
+                  const c = CATEGORIES.find(c => c.id === e.category) || CATEGORIES[7];
+                  return (
+                    <div key={e.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f5ede5" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: c.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{c.icon}</div>
+                        <div>
+                          <div style={{ fontSize: 14, color: "#5a3020", fontWeight: 500 }}>{e.name}</div>
+                          <div style={{ fontSize: 11, color: "#c0a890" }}>{e.date} · {c.label}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: "#e8845a" }}>−{e.amount}€</span>
+                        <button onClick={() => removeEntry(e.id)} style={{ background: "none", border: "none", color: "#d0b0a0", cursor: "pointer", fontSize: 18, padding: 0 }}>×</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* HISTORY TAB */}
+        {tab === "history" && (
+          <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
+              {savedMonths.length === 0 ? null : savedMonths.map(key => {
+                const [y, m] = key.split("-").map(Number);
+                return (
+                  <button key={key} onClick={() => { setSelectedMonth(m); setSelectedYear(y); }}
+                    style={pill(selectedMonth === m && selectedYear === y)}>
+                    {MONTHS[m]} {y}
+                  </button>
+                );
+              })}
+            </div>
+
+            {entries.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 0", color: "#c0a890" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🐾</div>
+                <div style={{ fontSize: 15 }}>Нет данных за этот месяц</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  {[
+                    { label: "Потрачено", val: totalSpent + "€", color: "#e8845a" },
+                    { label: "Остаток", val: remaining + "€", color: remaining < 0 ? "#c05050" : "#7aaa40" },
+                  ].map(s => (
+                    <div key={s.label} style={{ ...card, marginBottom: 0, textAlign: "center" }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.val}</div>
+                      <div style={{ fontSize: 12, color: "#b09080", marginTop: 2 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={card}>
+                  {entries.slice().reverse().map(e => {
+                    const c = CATEGORIES.find(c => c.id === e.category) || CATEGORIES[7];
+                    return (
+                      <div key={e.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f5ede5" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: c.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{c.icon}</div>
+                          <div>
+                            <div style={{ fontSize: 14, color: "#5a3020", fontWeight: 500 }}>{e.name}</div>
+                            <div style={{ fontSize: 11, color: "#c0a890" }}>{e.date} · {c.label}</div>
+                          </div>
+                        </div>
+                        {isCurrentMonth && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontSize: 15, fontWeight: 700, color: "#e8845a" }}>−{e.amount}€</span>
+                            <button onClick={() => removeEntry(e.id)} style={{ background: "none", border: "none", color: "#d0b0a0", cursor: "pointer", fontSize: 18, padding: 0 }}>×</button>
+                          </div>
+                        )}
+                        {!isCurrentMonth && (
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "#e8845a" }}>−{e.amount}€</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* FIXED TAB */}
+        {tab === "fixed" && (
+          <>
+            <div style={card}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#5a3020", marginBottom: 14 }}>Фиксированные расходы</div>
+              {FIXED_EXPENSES.map(e => (
+                <div key={e.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderBottom: "1px solid #f5ede5" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(232,132,90,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{e.icon}</div>
+                    <div>
+                      <div style={{ fontSize: 14, color: "#5a3020", fontWeight: 500 }}>{e.name}</div>
+                      {e.note && <div style={{ fontSize: 11, color: "#c0a890" }}>{e.note}</div>}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#e8845a" }}>{e.monthly}€</div>
+                    <div style={{ fontSize: 10, color: "#c0a890" }}>/мес</div>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: e.color }}>{e.monthly} €</div>
-                  <div style={{ fontSize: 10, color: "#c0a090" }}>/ мес</div>
-                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 0 0", borderTop: "2px solid #f0d8c8", marginTop: 4 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: "#7a4830" }}>Итого</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: "#e8845a" }}>{TOTAL_FIXED}€</span>
               </div>
-            ))}
-            <div style={{ ...styles.card, display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(200,100,60,0.08)", border: "1px solid rgba(200,100,60,0.2)" }}>
-              <span style={{ fontSize: 14, color: "#a06040" }}>Итого фиксированные</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#c47050" }}>{TOTAL_FIXED} €</span>
             </div>
-            <div style={{ ...styles.card, display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(140,180,80,0.1)", border: "1px solid rgba(140,180,80,0.2)", marginTop: 10 }}>
-              <span style={{ fontSize: 14, color: "#7a9850" }}>Свободные деньги</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#8aab60" }}>{AVAILABLE} €</span>
+
+            <div style={{ ...card, background: "linear-gradient(135deg, #f0fff0, #e8f8e0)", border: "1px solid rgba(120,180,80,0.2)" }}>
+              <div style={{ fontSize: 12, color: "#7a9850", fontWeight: 500, marginBottom: 6 }}>СВОБОДНЫХ ДЕНЕГ</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: "#5a8030" }}>{AVAILABLE}€</div>
+              <div style={{ fontSize: 12, color: "#a0b870", marginTop: 4 }}>из них {savingsGoal}€ в копилку → {AVAILABLE - savingsGoal}€ на жизнь</div>
             </div>
-          </div>
+          </>
         )}
-        <div style={{ height: 40 }} />
+      </div>
+
+      {/* BOTTOM NAV */}
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        background: "rgba(255,252,248,0.95)", backdropFilter: "blur(20px)",
+        borderTop: "1px solid rgba(200,130,80,0.15)",
+        display: "flex", padding: "8px 0 20px",
+      }}>
+        {[
+          { t: "home", icon: "🏠", label: "Обзор" },
+          { t: "add", icon: "➕", label: "Добавить" },
+          { t: "history", icon: "📅", label: "История" },
+          { t: "fixed", icon: "📋", label: "Фикс" },
+        ].map(n => (
+          <button key={n.t} onClick={() => setTab(n.t)} style={navBtn(n.t)}>
+            <span style={{ fontSize: 22 }}>{n.icon}</span>
+            <span>{n.label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
